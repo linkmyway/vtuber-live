@@ -8,6 +8,14 @@
 - 参考代码：[`reference/`](reference/)（YouTube 双形态解析器、全板统一筛选与热门游戏聚合；`npm install && npm run typecheck` 可直接验）
 - 本仓只有方法与脱敏说明；真实名册与直播数据不在本仓（存放在私有存档仓）
 
+## 效果图 / Screenshots
+
+运行中界面的实拍（2026-11-09；直播状态是截图那一刻的快照）：
+
+![桌面端](docs/images/desktop.png)
+
+![移动端](docs/images/mobile.png)
+
 A monitoring board for VTubers across YouTube, Twitch and Bilibili:
 a large curated roster grouped by agency (independent streamers are a
 first-class group), an ON AIR strip for whoever is live right now, and
