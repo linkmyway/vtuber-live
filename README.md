@@ -1,5 +1,13 @@
 # VTuber Live — a multi-platform live-status board
 
+## 中文说明
+
+女性人格 VTuber 实时监控看板的实现方法开源版：上百位主播、三平台、按社团分组的实时状态墙是怎么做的。
+
+- 实现文档：[`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md)（双形态直播检测、三平台预览策略、名册策展与链接审计、统一筛选谓词）
+- 参考代码：[`reference/`](reference/)（YouTube 双形态解析器、全板统一筛选与热门游戏聚合；`npm install && npm run typecheck` 可直接验）
+- 本仓只有方法与脱敏说明；真实名册与直播数据不在本仓（存放在私有存档仓）
+
 A monitoring board for VTubers across YouTube, Twitch and Bilibili:
 a large curated roster grouped by agency (independent streamers are a
 first-class group), an ON AIR strip for whoever is live right now, and
