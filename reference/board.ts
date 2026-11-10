@@ -80,7 +80,15 @@ export interface BoardFilter {
 
 const isLive = (c: Channel) => c.state === "live" || c.state === "chat";
 
-/** The single predicate. Roster grid and ON AIR stage both call this. */
+/** The single predicate. Roster grid and ON AIR stage both call this.
+ *
+ * @example
+ * matchesFilter(person, { platform: "twitch" })
+ * // → true only if one of the person's TWITCH channels satisfies the
+ * //   rest of the filter; her idle YouTube channel cannot carry her in.
+ * matchesFilter(hiddenPerson, {})
+ * // → false — hidden members never match, whatever the filter.
+ */
 export function matchesFilter(person: Vtuber, f: BoardFilter): boolean {
   if (person.hidden) return false;
   if (f.agency && person.agency !== f.agency) return false;
@@ -103,7 +111,13 @@ export function matchesFilter(person: Vtuber, f: BoardFilter): boolean {
   return person.channels.some(channelOk);
 }
 
-/** Aggregated "hot games" for the board header. */
+/** Aggregated "hot games" for the board header.
+ *
+ * @example
+ * hotGames(roster)
+ * // → [ { name: "VALORANT", streamers: ["…", "…"], viewers: 2995 }, … ]
+ * //   sorted by total viewers desc; ASMR sessions contribute no game.
+ */
 export function hotGames(roster: Vtuber[]): { name: string; streamers: string[]; viewers: number }[] {
   const byGame = new Map<string, { streamers: string[]; viewers: number }>();
   for (const p of roster) {
