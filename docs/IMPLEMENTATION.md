@@ -232,3 +232,9 @@ section governs.
   stop iOS focus zoom, with a landing correction after focus.
 - Edges: scroll behaviour is accepted on the owner's real device;
   probe screenshots are not a verdict.
+
+## Sync note (2026-11-12, covering the 2026-11-11 Space changes)
+
+- **Per-session ASMR detection**: a per-session flag (`live_status.is_asmr`) judges each stream on its own, separate from the per-person resident ASMR list. The detection chain is shared with game recognition: the platform's native category wins first, then strong title markers (ASMR, ear-cleaning / whisper terms, 3DIO / KU100, etc.); sleep-related words are weak markers and must pass a second check against game detection. Sessions judged ASMR get a distinct bright badge, and the ASMR view splits into "streaming ASMR now" and "live, but this session is not ASMR". A session with no marker at all is judged not-ASMR (no guessing without evidence).
+- **Bilibili viewer metric**: the room-info `online` field is a popularity score, not a concurrent-viewer count. The real concurrent count comes from the online gold-rank endpoint's `onlineNum`, read only after the live status confirms the room is actually streaming (for idle / looping rooms the value is a stale leftover). The on-air board ranks all platforms by real concurrent counts; roster cards show both figures with separate labels while the main stage shows only the concurrent count. When `onlineNum` is unavailable, a popularity-divided-by-K estimate is used for sorting only — never displayed and never summed.
+- **Auto-refresh**: every 15 minutes (changed from 30 minutes on 2026-11-10, page copy updated to match).
