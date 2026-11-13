@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap');
+@import "tailwindcss";
+@import "tailwindcss-safe-area";
+
+@theme {
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 28px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 36px;
+  --font-display: "Baloo 2", "PingFang SC", "Hiragino Sans", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #0d0a1f;
+  --bg-deep: #070512;
+  --surface: #1a1433;
+  --surface-2: #221a45;
+  --text: #f4f1ff;
+  --dim: #a79fc4;
+  --border: rgba(167, 139, 250, 0.22);
+  --accent: #8b5cf6;
+  --live: #ff2d78;
+  --gold: #ffb020;
+  --radius: 16px;
+  --space-surface: var(--surface);
+  --space-surface-alt: var(--surface-2);
+  --space-muted: var(--dim);
+  --space-border: var(--border);
+  --space-accent: var(--accent);
+}
+
+html {
+  background: var(--bg-deep);
+  /* Filter changes shrink the result list; with scroll anchoring on, the
+     browser "helpfully" re-anchors and the user lands at the page bottom
+     after tapping a filter chip. Off — the sticky toolbar + applyFilter
+     guard own the scroll position instead. */
+  overflow-anchor: none;
+}
+
+/* single-row filter chip scroller: no visible scrollbar */
+.no-scrollbar {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, "PingFang SC", "Hiragino Sans", "Noto Sans JP", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- stage backdrop: aurora nebula + starfield parallax layers ---- */
+.stage-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(255, 45, 120, 0.16), transparent 60%),
+    radial-gradient(900px 620px at -10% 22%, rgba(139, 92, 246, 0.28), transparent 62%),
+    radial-gradient(760px 480px at 55% 108%, rgba(56, 130, 246, 0.14), transparent 60%),
+    linear-gradient(180deg, #120c2b 0%, #0d0a1f 42%, #090614 100%);
+}
+.stage-stars {
+  position: fixed;
+  inset: -60px 0 0 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.6px 1.6px at 22px 34px, rgba(255, 255, 255, 0.85) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 130px 90px, rgba(196, 181, 253, 0.8) 50%, transparent 51%),
+    radial-gradient(1px 1px at 250px 150px, rgba(255, 255, 255, 0.55) 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 320px 60px, rgba(255, 183, 213, 0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 70px 190px, rgba(255, 255, 255, 0.45) 50%, transparent 51%);
+  background-size: 360px 240px;
+  opacity: 0.5;
+  /* no will-change: a permanent promoted layer for a 0.16-factor
+     parallax costs memory/composition every frame for a background
+     texture; the transform updates are rAF-throttled already */
+}
+.stage-floor {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 180px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(139, 92, 246, 0.10));
+  mask-image: linear-gradient(180deg, transparent, black 70%);
+}
+
+/* ---- holographic glass ---- */
+.holo {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03) 42%, rgba(139, 92, 246, 0.10));
+  border: 1px solid rgba(196, 181, 253, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -18px 32px -22px rgba(139, 92, 246, 0.45),
+    0 18px 36px -18px rgba(2, 0, 12, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Pre-composited glass for the MASS elements (all 227 roster cards, the
+   stage cards, the search field, filter chips, in-flow panels): same
+   gradient, border and shadows as .holo, but NO backdrop-filter.
+   Why this is visually equivalent here: a card's backdrop is the
+   page's own aurora — smooth, low-frequency colour fields plus 1–2px
+   star dots. blur(10px) of a smooth gradient IS the gradient, and the
+   star dots are far below the blur radius, so what the live blur
+   produced over a card is reproduced statically by deepening the
+   gradient and adding the aurora's average deep-violet tint as a flat
+   underlay. Why it matters: backdrop-filter is the top sustained-heat
+   source in iOS WebViews — every visible blurred element re-samples
+   and re-blurs its whole area on every scroll frame (the starfield
+   parallax moves the backdrop under every card continuously), so a
+   screenful of cards meant several full-card blur passes per frame.
+   Real backdrop blur survives only where the backdrop is busy AND
+   the area is tiny: the 48px back-to-top button (.holo) and the
+   backdrop-blur-sm chips over live frames. */
+.holo-flat {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05) 42%, rgba(139, 92, 246, 0.14)),
+    linear-gradient(160deg, rgba(38, 27, 84, 0.55), rgba(16, 11, 38, 0.62));
+  border: 1px solid rgba(196, 181, 253, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -18px 32px -22px rgba(139, 92, 246, 0.45),
+    0 18px 36px -18px rgba(2, 0, 12, 0.85);
+}
+
+/* ---- 3D tilt cards ---- */
+.tilt-scene {
+  perspective: 1100px;
+}
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.45s ease;
+}
+/* will-change only where tilt can actually run: useTilt is inert on
+   touch (hover: none), so on phones the hint just pinned a permanent
+   promoted layer on every stage card for nothing. */
+@media (hover: hover) and (pointer: fine) {
+  .tilt-card {
+    will-change: transform;
+  }
+}
+.tilt-inner {
+  transform: translateZ(26px);
+  transform-style: preserve-3d;
+}
+.tilt-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.16), transparent 46%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.tilt-scene:hover .tilt-shine,
+.tilt-scene:focus-within .tilt-shine {
+  opacity: 1;
+}
+
+/* live stage card: floating platform + magenta aura */
+.stage-card {
+  box-shadow:
+    0 30px 50px -22px rgba(255, 45, 120, 0.35),
+    0 24px 44px -18px rgba(2, 0, 12, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.stage-pedestal {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -14px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(50% 100% at 50% 0%, rgba(255, 45, 120, 0.4), rgba(139, 92, 246, 0.14) 62%, transparent 78%);
+  filter: blur(7px);
+  pointer-events: none;
+}
+
+/* ---- LIVE badge ----
+   The pulse ring is a ::after that scales and fades (transform +
+   opacity — compositor-only). The previous implementation animated
+   the badge's box-shadow spread, which is a PAINT property: every
+   visible badge repainted its shadow on every frame of the 1.8s
+   cycle. The ring reads the same — a magenta halo expanding out of
+   the pill and dissolving — but the per-frame shadow repaint is gone;
+   the static 3px ring shadow is painted once and then scaled by the
+   compositor (scaling a soft glow only softens it further). */
+@keyframes live-ring {
+  0% { transform: scale(1); opacity: 0.75; }
+  70% { transform: scale(1.5, 1.9); opacity: 0; }
+  100% { transform: scale(1.5, 1.9); opacity: 0; }
+}
+.live-badge {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(120deg, #ff2d78, #ff5e3a);
+}
+.live-badge::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 0 0 3px rgba(255, 45, 120, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  animation: live-ring 1.8s ease-out infinite;
+}
+@keyframes dot-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.live-dot {
+  animation: dot-blink 1.4s ease-in-out infinite;
+}
+
+/* ---- entrance + float ---- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.rise {
+  animation: rise-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.floaty {
+  animation: floaty 5.5s ease-in-out infinite;
+}
+
+/* ---- spotlight sweep on section titles ---- */
+.spot-title {
+  background: linear-gradient(100deg, #f4f1ff 20%, #c4b5fd 42%, #ff9ec7 55%, #f4f1ff 78%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: spot-pan 7s linear infinite;
+}
+@keyframes spot-pan {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* ---- person card depth ---- */
+.person-card {
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+@media (hover: hover) {
+  .person-card:hover {
+    transform: translateY(-5px);
+    box-shadow:
+      0 22px 38px -16px rgba(2, 0, 12, 0.9),
+      0 0 0 1px rgba(196, 181, 253, 0.35),
+      0 10px 34px -12px rgba(139, 92, 246, 0.5);
+  }
+}
+.avatar-ring {
+  background: conic-gradient(from 210deg, #8b5cf6, #ff2d78, #ffb020, #38bdf8, #8b5cf6);
+}
+.avatar-ring-live {
+  background: conic-gradient(from 210deg, #ff2d78, #ff5e3a, #ffb020, #ff2d78);
+  box-shadow: 0 0 18px rgba(255, 45, 120, 0.5);
+}
+
+/* chip selected glow */
+.chip-on {
+  background: linear-gradient(120deg, rgba(139, 92, 246, 0.9), rgba(255, 45, 120, 0.85));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 22px -8px rgba(255, 45, 120, 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .floaty, .spot-title, .live-badge, .live-badge::after, .live-dot {
+    animation: none !important;
+  }
+  .tilt-card, .person-card {
+    transition: none !important;
+  }
+}
+
+/* ---- performance: same effects, spent only where eyes are ----
+   The glamour stays exactly as designed — breathing LIVE badges,
+   glow pulses, floating, spotlight titles, holographic glass, 3D
+   tilt. What changes is WHEN and HOW the GPU pays for it:
+   - every animated region root carries data-inview from an
+     IntersectionObserver — cards, the header, section titles, agency
+     headers; while a region is off screen its infinite animations
+     pause (animation-play-state only — the moment it scrolls back,
+     the effect resumes mid-cycle, visually identical);
+   - roster/stage cards use content-visibility so off-screen cards
+     skip render/layout/paint entirely; on-screen cards render fully;
+   - the mass glass surfaces use .holo-flat (pre-composited gradient,
+     no backdrop-filter — see its comment for why that is the same
+     picture over this page's aurora), the LIVE pulse is a composited
+     transform/opacity ring, and tilt's will-change exists only on
+     hover-capable devices. */
+[data-inview="false"] .live-badge,
+[data-inview="false"] .live-badge::after,
+[data-inview="false"] .live-dot,
+[data-inview="false"] .floaty,
+[data-inview="false"] .spot-title {
+  animation-play-state: paused;
+}
+.cv-person {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 330px;
+}
+.cv-stage {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 470px;
+}
