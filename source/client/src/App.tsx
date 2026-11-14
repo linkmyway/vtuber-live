@@ -861,10 +861,17 @@ function LiveScreenshot({
   ch,
   name,
   href,
+  priority = false,
 }: {
   ch: Channel;
   name: string;
   href: string;
+  // True only for the first one or two stage cards (the page's
+  // de-facto LCP): those pictures load eagerly at high fetch
+  // priority instead of lazy. Every other stage picture stays
+  // lazy — promoting the whole row would just make the priorities
+  // fight each other (optimize-image-priority).
+  priority?: boolean;
 }) {
   const { ref: wrapRef, inView } = useInView<HTMLDivElement>(0.05);
   const source = screenshotSource(ch);
@@ -966,7 +973,8 @@ function LiveScreenshot({
             src={dSrc}
             alt={`${name} 的${dFrame ? "直播实时截图" : "直播封面"}`}
             className="h-full w-full object-cover"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : undefined}
             onLoad={() => setUpdatedAt((t) => t ?? Date.now())}
             onError={() => {
               // A failed picture NEVER swaps in the avatar portrait
@@ -1014,6 +1022,7 @@ const StageCard = memo(function StageCard({
   refreshedAt,
   onHide,
   inAsmrView = false,
+  priority = false,
 }: {
   v: Vtuber;
   ch: Channel;
@@ -1025,6 +1034,10 @@ const StageCard = memo(function StageCard({
   // the whole point of the session-level distinction (an ASMR
   // streamer's game stream must not read as an ASMR stream).
   inAsmrView?: boolean;
+  // True for the first one or two stage cards only: their picture
+  // is the first-screen LCP and loads eagerly at high priority
+  // (see LiveScreenshot).
+  priority?: boolean;
 }) {
   const tiltRef = useTilt<HTMLDivElement>();
   const { ref: viewRef, inView } = useInView<HTMLDivElement>();
@@ -1045,7 +1058,7 @@ const StageCard = memo(function StageCard({
       >
         <div className="tilt-shine" />
         <div className="relative">
-          <LiveScreenshot ch={ch} name={v.name} href={appTarget} />
+          <LiveScreenshot ch={ch} name={v.name} href={appTarget} priority={priority} />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
           <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
             <LiveBadge />
@@ -2437,6 +2450,7 @@ export function App() {
                               refreshedAt={data.refreshedAt}
                               onHide={hidePerson}
                               inAsmrView
+                              priority={idx < 2}
                             />
                           ))}
                         </div>
@@ -2453,6 +2467,7 @@ export function App() {
                       index={i}
                       refreshedAt={data.refreshedAt}
                       onHide={hidePerson}
+                      priority={i < 2}
                     />
                   ))}
                 </div>
