@@ -817,6 +817,28 @@ export const ROSTER: RosterEntry[] = [
   yt("hinageshi", "氷夏至", "HINAGESHI", "神椿（KAMITSUBAKI STUDIO）", "少女革命計画「罪十罰」成员，虚拟歌手。", "歌,音乐,罪十罰", 274, "UCTZyqEU7dSXbc4b-NBolgMg", "@hinageshi_grp"),
   yt("mikoto", "美古途", "MIKOTO", "神椿（KAMITSUBAKI STUDIO）", "少女革命計画「罪十罰」成员，虚拟歌手。", "歌,音乐,罪十罰", 275, "UC1GH6W6CzBUCR_3oHegiBGw", "@mikoto_grp"),
   yt("yunagi", "夕凪機", "YUNAGI", "神椿（KAMITSUBAKI STUDIO）", "少女革命計画「罪十罰」成员，虚拟歌手。", "歌,音乐,罪十罰", 276, "UC9tOWVNzMaXDD5SxKP1zAug", "@yunagi_grp"),
+  // ---- 用户点名追加（2026-11-15：東雪蓮） ----
+  // 核验（2026-11-15 沙箱直连逐项回读）：Bilibili card 接口 UID
+  // 1437582453 回读账号名「東雪蓮Official」、官方认证「bilibili 知名
+  // 虚拟UP主」、粉丝 893,475；getRoomInfoOld 同 mid 回房间号 22816111、
+  // get_info 回读 uid 同为 1437582453，UID 与房间号同属一人。YouTube
+  // 频道页回读 externalId UCEuqN76-F2rl1-08aGt8siA / handle
+  // @SerenAzuma / 频道名「東 雪蓮Seren Azuma」，且该频道页外链直接
+  // 链回 bilibili.com/1437582453 与其 X（azumaseren），官方出处互证。
+  // Twitch login azuse_ 同样出自其 YouTube 官方频道页外链，decapi
+  // 回读账号存在、头像与其 B站官方头像为同一张本人图。主平台按用户
+  // 当场确认定 Bilibili（见 PRIMARY_PLATFORM 的 seren 条）。头像取
+  // B站 card 接口官方 face 存入自有素材并看图确认（银蓝长发、蓝玫瑰、
+  // 吸血鬼小虎牙）。卡面只写现名义当前信息。
+  {
+    slug: "seren", name: "东雪莲", nameAlt: "東雪蓮", region: "cn", agency: "Blanche Fleur",
+    reason: "旅日华人创作歌手，Blanche Fleur 所属，吸血鬼设定；日/中/英三语配信，B站为主阵地，YouTube 发歌与配信、Twitch 打游戏。", tags: "歌,原创,三语配信,吸血鬼", sortRank: 277,
+    channels: [
+      { platform: "bilibili", accountId: "1437582453", roomId: "22816111", handle: "東雪蓮Official", url: "https://live.bilibili.com/22816111", appUrl: "bilibili://live/22816111", followersLabel: "B站约 89 万粉丝" },
+      { platform: "youtube", accountId: "UCEuqN76-F2rl1-08aGt8siA", handle: "@SerenAzuma", url: "https://www.youtube.com/@SerenAzuma", appUrl: "youtube://www.youtube.com/@SerenAzuma" },
+      { platform: "twitch", accountId: "azuse_", handle: "azuse_", url: "https://www.twitch.tv/azuse_", appUrl: "twitch://stream/azuse_" },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -853,6 +875,7 @@ const PRIMARY_PLATFORM: Record<string, Platform> = {
   setsune: "twitch", // 梵雪音: ASMR 直播在 Twitch，YT 以游戏配信为主
   pikon: "twitch", // 網野ぴこん: YT 直播停约 1 年，直播主场已移 Twitch
   ohka: "twitch", // ひなみ桜花: ASMR 直播主场 Twitch（Partner），YT 为游戏副频道
+  seren: "bilibili", // 東雪蓮: 用户 2026-11-15 当场确认 B站为主阵地（B站约 89 万粉丝，YouTube/Twitch 为副频道）
 };
 
 /** Her primary platform: the explicit table first, then the stored

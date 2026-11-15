@@ -254,6 +254,7 @@ import garasumiya from "./assets/avatars-sm/garasumiya.jpg";
 import hinageshi from "./assets/avatars-sm/hinageshi.jpg";
 import mikoto from "./assets/avatars-sm/mikoto.jpg";
 import yunagi from "./assets/avatars-sm/yunagi.jpg";
+import seren from "./assets/avatars-sm/seren.jpg";
 
 const AVATARS: Record<string, string> = {
   marine, pekora, suisei, miko, fubuki, ayame, haato, matsuri, kotone, asagi,
@@ -276,6 +277,7 @@ const AVATARS: Record<string, string> = {
   nemu, mashiro, pikon, yotogi, ohka, ina17, oko05,
   kaf, rim, harusaruhi, isekaijoucho, koko, ciel, asu, bema,
   chino, neffy, rara, orihime, kakyoin, garasumiya, hinageshi, mikoto, yunagi,
+  seren,
 };
 
 type Board = ApiResponse<typeof api, "getBoard">;
