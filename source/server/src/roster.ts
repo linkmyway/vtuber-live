@@ -839,6 +839,18 @@ export const ROSTER: RosterEntry[] = [
       { platform: "twitch", accountId: "azuse_", handle: "azuse_", url: "https://www.twitch.tv/azuse_", appUrl: "twitch://stream/azuse_" },
     ],
   },
+  // ---- 时下热门批（2026-11-16：本周涨粉速报冒头四人，逐人官方核验） ----
+  // 核验方式与历批相同：YouTube 频道页回读 externalId + handle +
+  // og:title（频道名）三项对上本人，头像取该频道 og:image 存入自有
+  // 素材并看图确认；所属以事务所官方出处为准（速报口径两处有误，
+  // 已按官方核实纠正，逐条见 DATA-PLAN 2026-11-16 热门批记录）：
+  // 速报「綴理鈴菜」实为 hololive「アソビ★まわり隊！」的鈴鳴つづり
+  // （すずな つづり）；速报「あちちメラ」官方汉字为熱千めら；速报
+  // 「御玉あおい」官方汉字为海琳あおい（みたま あおい）。
+  yt("tsuzuri", "铃鸣缀理", "鈴鳴つづり", "hololive", "hololive 新组合「アソビ★まわり隊！」成员，山羊邮差兼运货人担当（读作すずな つづり），2026-09-25 出道；约 37.7 万订阅、周增约 8,000，本周涨粉榜前列。", "杂谈,歌,新人", 278, "UCy9mgxB8pn2C4aNK_MPthDQ", "@SuzunaTsuzuri"),
+  yt("mela", "热千梅拉", "熱千めら", "hololive", "hololive 新组合「アソビ★まわり隊！」成员，元气火消沙罗曼达担当，口头禅「火の用心じゃ〜！」，2026-09-24 出道；约 42 万订阅、周增约 7,000，出道两个月势头正热。", "杂谈,游戏,新人", 279, "UC8eitCE9Z6EwUCs-VUi1blg", "@AchichiMela"),
+  yt("mayoi", "旋风舞依", "旋風マヨイ", "Millipro", "Millipro UNI 新成员，幽灵少女歌势，ボカロ歌 Shorts 出身；2026-11-14 宣布加入当日单日涨粉约 7,800（约 2.84 万→3.62 万、+27.5%）拿下当日全站第一，初配信筹备中。", "歌,新人,幽灵", 280, "UCC_JkPMH5C6mgLDpy4uO-Aw", "@TsumujiMayoi"),
+  yt("mitama", "海琳葵", "海琳あおい", "Millipro", "Millipro NOVA 出身的海龟 VTuber（みたま あおい），2026-10-17 初配信，歌、打击乐与音游是招牌；约 17.5 万订阅、周增约 7,000。", "歌,音游,新人", 281, "UCKCb7zirdauYVUPokYvoNTQ", "@MitamaAoi"),
 ];
 
 // ---------------------------------------------------------------------------
