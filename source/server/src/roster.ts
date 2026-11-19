@@ -851,6 +851,16 @@ export const ROSTER: RosterEntry[] = [
   yt("mela", "热千梅拉", "熱千めら", "hololive", "hololive 新组合「アソビ★まわり隊！」成员，元气火消沙罗曼达担当，口头禅「火の用心じゃ〜！」，2026-09-24 出道；约 42 万订阅、周增约 7,000，出道两个月势头正热。", "杂谈,游戏,新人", 279, "UC8eitCE9Z6EwUCs-VUi1blg", "@AchichiMela"),
   yt("mayoi", "旋风舞依", "旋風マヨイ", "Millipro", "Millipro UNI 新成员，幽灵少女歌势，ボカロ歌 Shorts 出身；2026-11-14 宣布加入当日单日涨粉约 7,800（约 2.84 万→3.62 万、+27.5%）拿下当日全站第一，初配信筹备中。", "歌,新人,幽灵", 280, "UCC_JkPMH5C6mgLDpy4uO-Aw", "@TsumujiMayoi"),
   yt("mitama", "海琳葵", "海琳あおい", "Millipro", "Millipro NOVA 出身的海龟 VTuber（みたま あおい），2026-10-17 初配信，歌、打击乐与音游是招牌；约 17.5 万订阅、周增约 7,000。", "歌,音游,新人", 281, "UCKCb7zirdauYVUPokYvoNTQ", "@MitamaAoi"),
+  // ---- 用户点名追加（2026-11-19：魔王なのだ） ----
+  // 核验（2026-11-19 沙箱直连回读）：YouTube 频道页 externalId
+  // UCqNg-6Ge-w9apSiglceURoQ / vanity handle @maounanoda6 / 频道名
+  // 「魔王なのだ」三项对上本人；频道简介自述「個人勢vtuberの魔王
+  // なのだです🎀💜」，外链 X @maounanoda_ 与 lit.link/maounanoda
+  // 与用户给的资料一致。10/26 出道的新人，几乎每日早 7 点朝活雑談，
+  // 另有游戏与绘画配信，3D 化众筹已达成。单平台（YouTube），主平台
+  // 即 YouTube，不入 PRIMARY_PLATFORM 表。头像取频道 og:image 存入
+  // 自有素材并看图确认（紫发粉缎带、魔王系造型）。
+  yt("maou", "魔王纳诺达", "魔王なのだ", "个人势", "个人势魔王系新人，10/26 出道；几乎每天早 7 点朝活杂谈，另有游戏和绘画配信，3D 化众筹已达成。粉丝名なのP，粉丝标记🎀💜。", "杂谈,游戏,绘画,新人", 282, "UCqNg-6Ge-w9apSiglceURoQ", "@maounanoda6"),
 ];
 
 // ---------------------------------------------------------------------------
