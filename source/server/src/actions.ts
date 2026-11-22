@@ -56,6 +56,12 @@ const channelOut = z.object({
   accountId: z.string(),
   roomId: z.string(),
   handle: z.string(),
+  // Official sub channel (小号) of the same person on the same
+  // platform — a secondary channel, never a second person. subName
+  // is its own display name (e.g. 未確認少女観測部), shown on cards
+  // so a featured stream from the sub reads as such.
+  isSub: z.boolean(),
+  subName: z.string(),
   url: z.string(),
   appUrl: z.string(),
   followersLabel: z.string(),
@@ -171,6 +177,8 @@ export const Actions = {
                 url: ch.url,
                 appUrl: ch.appUrl,
                 followersLabel: ch.followersLabel ?? "",
+                isSub: ch.isSub ? 1 : 0,
+                subName: ch.subName ?? "",
               })
               .where(eq(schema.channels.id, found.id));
             continue;
@@ -181,6 +189,7 @@ export const Actions = {
               vtuberId, platform: ch.platform, accountId: ch.accountId,
               roomId: ch.roomId ?? "", handle: ch.handle, url: ch.url,
               appUrl: ch.appUrl, followersLabel: ch.followersLabel ?? "",
+              isSub: ch.isSub ? 1 : 0, subName: ch.subName ?? "",
             })
             .returning({ id: schema.channels.id });
           const c = chRows[0];
@@ -248,20 +257,31 @@ export const Actions = {
         // When the primary platform is not live, the (single) live
         // secondary stream is featured instead: priority orders
         // simultaneous streams, it never hides a lone one.
+        // Sub channels (小号, same person, same platform) rank BELOW
+        // every main channel: main + sub live together → the main
+        // stream features; only the sub live → the sub features (that
+        // is the whole point of wiring subs into detection — for the
+        // KAMITSUBAKI members the sub is where daily/member streams
+        // actually happen). Ranking: primary-platform main first,
+        // then any main by sort key, then subs by sort key.
         const liveChans = ownChans.filter(
           (c) => statusByChannel.get(c.id)?.state === "live",
         );
-        const featuredLive =
-          liveChans.find((c) => c.platform === primaryPlatform) ??
-          liveChans.reduce<(typeof liveChans)[number] | undefined>(
-            (best, c) =>
-              best == null ||
-              onAirSortKeyOf(statusByChannel.get(c.id), c.platform) >
-                onAirSortKeyOf(statusByChannel.get(best.id), best.platform)
-                ? c
-                : best,
-            undefined,
-          );
+        const featuredRank = (c: (typeof liveChans)[number]): number =>
+          (c.platform === primaryPlatform ? 0 : 2) + (c.isSub === 1 ? 1 : 0);
+        const featuredLive = liveChans.reduce<(typeof liveChans)[number] | undefined>(
+          (best, c) => {
+            if (best == null) return c;
+            const rc = featuredRank(c);
+            const rb = featuredRank(best);
+            if (rc !== rb) return rc < rb ? c : best;
+            return onAirSortKeyOf(statusByChannel.get(c.id), c.platform) >
+              onAirSortKeyOf(statusByChannel.get(best.id), best.platform)
+              ? c
+              : best;
+          },
+          undefined,
+        );
         if (featuredLive && v.hidden !== 1) {
           const st = statusByChannel.get(featuredLive.id);
           liveCount += 1;
@@ -299,6 +319,8 @@ export const Actions = {
             accountId: ch.accountId,
             roomId: ch.roomId,
             handle: ch.handle,
+            isSub: ch.isSub === 1,
+            subName: ch.subName ?? "",
             url: ch.url,
             appUrl: ch.appUrl,
             followersLabel: ch.followersLabel,

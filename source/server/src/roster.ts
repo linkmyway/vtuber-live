@@ -19,7 +19,26 @@ export type RosterChannel = {
   url: string;
   appUrl: string;
   followersLabel?: string;
+  // True for her official SUB channel (小号): a secondary channel of
+  // the same person on the same platform (the KAMITSUBAKI membership
+  // clubs). It joins live detection as a secondary channel — the
+  // person still counts once, her primary platform and her roster
+  // card's 个人主页 stay on the main channel, and the main channel
+  // wins the featured slot when both are live. subName is the sub
+  // channel's own display name, shown on cards so the user can tell
+  // which channel a featured stream comes from.
+  isSub?: boolean;
+  subName?: string;
 };
+
+/** A YouTube main channel + her verified official sub channel. */
+const ytSub = (
+  main: { cid: string; handle: string },
+  sub: { cid: string; handle: string; subName: string; followersLabel?: string },
+): RosterChannel[] => [
+  { platform: "youtube", accountId: main.cid, handle: main.handle, url: `https://www.youtube.com/${main.handle}`, appUrl: `youtube://www.youtube.com/${main.handle}` },
+  { platform: "youtube", accountId: sub.cid, handle: sub.handle, url: `https://www.youtube.com/${sub.handle}`, appUrl: `youtube://www.youtube.com/${sub.handle}`, followersLabel: sub.followersLabel, isSub: true, subName: sub.subName },
+];
 
 export type RosterEntry = {
   slug: string;
@@ -654,8 +673,8 @@ export const ROSTER: RosterEntry[] = [
     ],
   },
   {
-    slug: "kson", name: "Kson", nameAlt: "kson総長", region: "en", agency: "VShojo",
-    reason: "VShojo 的总长，YouTube / Twitch 双栖，游戏和杂谈的老牌人气。", tags: "游戏,杂谈", sortRank: 215,
+    slug: "kson", name: "Kson", nameAlt: "kson総長", region: "en", agency: "个人势",
+    reason: "个人势总长（2025 年 7 月离开 VShojo 后独立活动），YouTube / Twitch 双栖，游戏和杂谈的老牌人气。", tags: "游戏,杂谈", sortRank: 215,
     channels: [
       { platform: "youtube", accountId: "UC9ruVYPv7yJmV0Rh0NKA-Lw", handle: "@ksonONAIR", url: "https://www.youtube.com/@ksonONAIR", appUrl: "youtube://www.youtube.com/@ksonONAIR" },
       { platform: "twitch", accountId: "ksonsouchou", handle: "ksonsouchou", url: "https://www.twitch.tv/ksonsouchou", appUrl: "twitch://stream/ksonsouchou" },
@@ -800,14 +819,69 @@ export const ROSTER: RosterEntry[] = [
   // 未入册者与原因见 DATA-PLAN 2026-11-12 神椿批记录（存流已结束
   // 活动、te'resa 官方频道 2023-03 后无新投稿、VALIS 的 MYU / VITTE
   // 无个人频道、梓川 / 詩道 / Sooda / ANMC 两人为真人音乐人等）。
-  yt("kaf", "花譜", "KAF", "神椿（KAMITSUBAKI STUDIO）", "神椿头牌虚拟歌手，V.W.P 的核心；另以「廻花（KAIKA）」名义活动，同为本人，不另建条目。原创与演唱会为主，偶有直播。", "歌,音乐,V.W.P", 260, "UCQ1U65-CQdIoZ2_NA4Z4F7A", "@virtual_kaf"),
-  yt("rim", "理芽", "RIM", "神椿（KAMITSUBAKI STUDIO）", "V.W.P 成员，透明感与艳丽感并存的次世代虚拟歌手，日英韩三语曲目都唱。", "歌,音乐,V.W.P", 261, "UCfBkUgaJ6eqYA9_TX2cmq9A", "@RIM_virtual"),
-  yt("harusaruhi", "春猿火", "Harusaruhi", "神椿（KAMITSUBAKI STUDIO）", "V.W.P 成员，虚拟歌手兼说唱，HIPHOP 底色 + 强节奏，歌回密度高。", "歌,说唱,V.W.P", 262, "UCE7gtjLeZKNXLp5YURzYYeg", "@harusaruhi"),
-  yt("isekaijoucho", "ヰ世界情緒", "Isekaijoucho", "神椿（KAMITSUBAKI STUDIO）", "V.W.P 成员，虚拟暗黑系歌手，作词作曲绘画都自己来的创作型。", "歌,音乐,V.W.P,创作", 263, "UCah4_WVjmr8XA7i5aigwV-Q", "@isekaijoucho"),
-  yt("koko", "幸祜", "KOKO", "神椿（KAMITSUBAKI STUDIO）", "V.W.P 成员，摇滚系虚拟歌手，爆发力唱功 + 吉他弹唱。", "歌,摇滚,V.W.P", 264, "UC7Gow-kNHq21oejSIDg9PAg", "@KOKO__virtual"),
+  // 神椿小号批（2026-11-22 全名册小号审计后接入）：神椿（THINKR 系）
+  // 的制度化结构是「主频道放作品、日常/会员直播开在官方小号」——
+  // 17 人中 7 人有个人官方小号，逐个以频道页回读 externalId +
+  // og:title 核对后作为副频道接入检测（人不重复计数、主平台仍为
+  // YouTube 主频道、主页按钮仍焊主频道；主/小号同播时主频道优先）。
+  // 审计全文：~/workspace/goals/vtuber/hidden_files/subchannel-audit-2026-11-22.md
+  {
+    slug: "kaf", name: "花譜", nameAlt: "KAF", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "神椿头牌虚拟歌手，V.W.P 的核心；另以「廻花（KAIKA）」名义活动，同为本人，不另建条目。主频道以原创与演唱会为主，日常与会员直播在小号「未確認少女観測部」。", tags: "歌,音乐,V.W.P", sortRank: 260,
+    channels: ytSub(
+      { cid: "UCQ1U65-CQdIoZ2_NA4Z4F7A", handle: "@virtual_kaf" },
+      { cid: "UCkJYa9mVS25eHOO9bM7YK3Q", handle: "@kaf_sub", subName: "未確認少女観測部", followersLabel: "小号约 6.1 万订阅" },
+    ),
+  },
+  {
+    slug: "rim", name: "理芽", nameAlt: "RIM", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "V.W.P 成员，透明感与艳丽感并存的次世代虚拟歌手，日英韩三语曲目都唱；会员杂谈与联动游戏视角多在小号「STRANGE GIRL CLUB」。", tags: "歌,音乐,V.W.P", sortRank: 261,
+    channels: ytSub(
+      { cid: "UCfBkUgaJ6eqYA9_TX2cmq9A", handle: "@RIM_virtual" },
+      { cid: "UCZYl1o6ftRLKZP6U4KjQl3g", handle: "@RIMstrangegirlclub", subName: "RIM -STRANGE GIRL CLUB-", followersLabel: "小号约 2.6 万订阅" },
+    ),
+  },
+  {
+    slug: "harusaruhi", name: "春猿火", nameAlt: "Harusaruhi", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "V.W.P 成员，虚拟歌手兼说唱，HIPHOP 底色 + 强节奏，歌回密度高；会员直播在小号「台風倶楽部」。", tags: "歌,说唱,V.W.P", sortRank: 262,
+    channels: ytSub(
+      { cid: "UCE7gtjLeZKNXLp5YURzYYeg", handle: "@harusaruhi" },
+      { cid: "UC5BzXtjnKt1fjEDjEJwx5JA", handle: "@harusaruhi_club", subName: "台風倶楽部", followersLabel: "小号约 2.1 万订阅" },
+    ),
+  },
+  {
+    slug: "isekaijoucho", name: "ヰ世界情緒", nameAlt: "Isekaijoucho", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "V.W.P 成员，虚拟暗黑系歌手，作词作曲绘画都自己来的创作型；月度会员配信与电台节目在小号「ヰ世界電子通信部」。", tags: "歌,音乐,V.W.P,创作", sortRank: 263,
+    channels: ytSub(
+      { cid: "UCah4_WVjmr8XA7i5aigwV-Q", handle: "@isekaijoucho" },
+      { cid: "UC3VN9h8fokwB2XURWHNcdWw", handle: "@isekaijoucho_sub", subName: "ヰ世界電子通信部", followersLabel: "小号约 5.3 万订阅" },
+    ),
+  },
+  {
+    slug: "koko", name: "幸祜", nameAlt: "KOKO", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "V.W.P 成员，摇滚系虚拟歌手，爆发力唱功 + 吉他弹唱；联动视角有时开在主频道，会员限定配信「幸福拡張部電脳科」在小号高频更新。", tags: "歌,摇滚,V.W.P", sortRank: 264,
+    channels: ytSub(
+      { cid: "UC7Gow-kNHq21oejSIDg9PAg", handle: "@KOKO__virtual" },
+      { cid: "UCyCbd63S29BuFOkJC2-aR4g", handle: "@koko_subchannel", subName: "幸福拡張部電脳科", followersLabel: "小号约 2.3 万订阅" },
+    ),
+  },
   yt("ciel", "CIEL", "CIEL", "神椿（KAMITSUBAKI STUDIO）", "神椿选拔出身的虚拟歌手，剧场动画《电影大好きポンポさん》主题歌演唱者；与 Sooda 的组合「空爽」成员（组合不单独建条目）。", "歌,音乐", 265, "UCRvkXFtB70ZADg4L6A8L3wQ", "@CIEL_VanillaSky"),
-  yt("asu", "明透", "ASU", "神椿（KAMITSUBAKI STUDIO）", "SINSEKAI RECORD 虚拟歌手，通透系歌声，歌与直播并行；原组合 Albemuth 已结束活动，现以个人名义活动。", "歌,音乐,SINSEKAI", 266, "UCBLGjbYv6-xxju1i44RjnnA", "@ASU_virtual"),
-  yt("bema", "琶舞", "BEMA", "神椿（KAMITSUBAKI STUDIO）", "SINSEKAI RECORD 虚拟歌手，2025-04 出道的新人，势头正猛。", "歌,音乐,SINSEKAI,新人", 267, "UCO6mA1hC3Gv9jEoCTITjAQw", "@virtual_BEMA"),
+  {
+    slug: "asu", name: "明透", nameAlt: "ASU", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "SINSEKAI RECORD 虚拟歌手，通透系歌声，歌与直播并行；原组合 Albemuth 已结束活动，现以个人名义活动。会员游戏/杂谈配信在小号「CLEAR ASU」。", tags: "歌,音乐,SINSEKAI", sortRank: 266,
+    channels: ytSub(
+      { cid: "UCBLGjbYv6-xxju1i44RjnnA", handle: "@ASU_virtual" },
+      { cid: "UCfzP3R8QQ77ryTnHeEiBVMw", handle: "@asu_sub", subName: "CLEAR ASU", followersLabel: "小号约 2.7 万订阅" },
+    ),
+  },
+  {
+    slug: "bema", name: "琶舞", nameAlt: "BEMA", region: "jp", agency: "神椿（KAMITSUBAKI STUDIO）",
+    reason: "SINSEKAI RECORD 虚拟歌手，2025-04 出道的新人，势头正猛；会员向与游戏配信在小号「BEMA HOLIC」。", tags: "歌,音乐,SINSEKAI,新人", sortRank: 267,
+    channels: ytSub(
+      { cid: "UCO6mA1hC3Gv9jEoCTITjAQw", handle: "@virtual_BEMA" },
+      { cid: "UCPH0ZS-AGZbt2JC51qFGrkw", handle: "@BEMA_sub", subName: "BEMA HOLIC", followersLabel: "小号约 0.8 万订阅" },
+    ),
+  },
   yt("chino", "CHINO", "チノ", "神椿（KAMITSUBAKI STUDIO）", "VALIS 成员（组合 2025-12 起无限期休止），个人频道持续直播中，游戏与杂谈都播。", "歌,游戏,杂谈,VALIS", 268, "UCJ0PCT2OVrvWGfSdrpG5Stw", "@v-chino"),
   yt("neffy", "NEFFY", "ネフィ", "神椿（KAMITSUBAKI STUDIO）", "VALIS 成员（组合无限期休止中），个人频道「ネフィの楽屋」持续杂谈直播。", "歌,杂谈,VALIS", 269, "UCdnKpUAm-dcxUFi81w8x8Cg", "@v-neffy"),
   yt("rara", "RARA", "ララ", "神椿（KAMITSUBAKI STUDIO）", "VALIS 成员（组合无限期休止中），个人频道活跃，游戏与联动直播多。", "歌,游戏,VALIS", 270, "UCUHTdqEOFW_X4wGPOIayzkg", "@v-rara"),

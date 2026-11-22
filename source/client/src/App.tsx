@@ -721,6 +721,15 @@ function roomTargetFor(ch: Channel): string {
  * lone one. Under an explicit platform filter the filter wins — the
  * stage is channel-level there by design. The server applies the same
  * rule to the headcount and the hot-games aggregation.
+ *
+ * Sub channels (小号 — her official secondary channel on the SAME
+ * platform, e.g. the KAMITSUBAKI membership clubs) rank below every
+ * main channel in the same tier: main + sub live together → the main
+ * stream features and the sub stays on her roster card as an
+ * also-live link; only the sub live → the sub features, labelled as
+ * a sub-channel stream (for those members the sub is where daily /
+ * member streams actually happen, so hiding it would blind the
+ * board to most of her streaming).
  */
 function featuredLiveChannel(
   v: Vtuber,
@@ -729,15 +738,42 @@ function featuredLiveChannel(
   const lives = v.channels.filter((c) => c.state === "live");
   if (lives.length === 0) return undefined;
   if (platformFilter !== "all") {
-    return lives.find((c) => c.platform === platformFilter);
+    const inFilter = lives.filter((c) => c.platform === platformFilter);
+    if (inFilter.length === 0) return undefined;
+    // Within the filtered platform a main channel still beats her
+    // sub channel; sort key decides only between two mains / subs.
+    return inFilter.reduce<Channel | undefined>((best, c) => {
+      if (best == null) return c;
+      if (c.isSub !== best.isSub) return c.isSub ? best : c;
+      return onAirSortKey(c) > onAirSortKey(best) ? c : best;
+    }, undefined);
   }
+  const rank = (c: Channel): number =>
+    (c.platform === v.primaryPlatform ? 0 : 2) + (c.isSub ? 1 : 0);
+  return lives.reduce<Channel | undefined>((best, c) => {
+    if (best == null) return c;
+    const rc = rank(c);
+    const rb = rank(best);
+    if (rc !== rb) return rc < rb ? c : best;
+    return onAirSortKey(c) > onAirSortKey(best) ? c : best;
+  }, undefined);
+}
+
+/**
+ * Badge marking a stream as coming from her official sub channel
+ * (小号) — shown wherever a sub channel's stream is the one on
+ * display (stage card, roster live box, chat box), so the user can
+ * tell at a glance that this session lives on the sub, not the main
+ * channel. Carries the sub channel's own name when known.
+ */
+function SubChannelBadge({ ch, small = false }: { ch: Channel; small?: boolean }) {
+  if (!ch.isSub) return null;
   return (
-    lives.find((c) => c.platform === v.primaryPlatform) ??
-    lives.reduce<Channel | undefined>(
-      (best, c) =>
-        best == null || onAirSortKey(c) > onAirSortKey(best) ? c : best,
-      undefined,
-    )
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border border-cyan-300/40 bg-cyan-400/15 font-semibold text-cyan-100 ${small ? "px-2 py-px text-[10px]" : "px-2.5 py-1 text-xs"}`}
+    >
+      小号{ch.subName ? ` · ${ch.subName}` : ""}
+    </span>
   );
 }
 
@@ -1072,6 +1108,7 @@ const StageCard = memo(function StageCard({
           <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
             <LiveBadge />
             {ch.isAsmr && <AsmrLiveBadge />}
+            <SubChannelBadge ch={ch} />
           </div>
           <div className="absolute bottom-3 right-3 flex max-w-[70%] flex-wrap items-center justify-end gap-1.5">
             {hcs.map((hc) => (
@@ -1178,8 +1215,14 @@ const PersonCard = memo(function PersonCard({
   const liveCh =
     platformFilter === "all"
       ? featuredLiveChannel(v, "all")
-      : v.channels.find((c) => c.state === "live");
-  const chatCh = v.channels.find((c) => c.state === "chat");
+      : // Roster stays person-level under a filter (any live stream
+        // presents the card), but a main channel still outranks her
+        // sub channel as the presented stream.
+        (v.channels.find((c) => c.state === "live" && !c.isSub) ??
+        v.channels.find((c) => c.state === "live"));
+  const chatCh =
+    v.channels.find((c) => c.state === "chat" && !c.isSub) ??
+    v.channels.find((c) => c.state === "chat");
   const display =
     liveCh ??
     chatCh ??
@@ -1212,7 +1255,12 @@ const PersonCard = memo(function PersonCard({
   // members match trivially (their only channel IS the primary one).
   const profileCh =
     (v.primaryPlatform
-      ? v.channels.find((c) => c.platform === v.primaryPlatform)
+      ? // The profile is the MAIN channel of her primary platform —
+        // never her sub channel (小号), even though it shares the
+        // platform: 个人主页 stays welded to the main channel.
+        (v.channels.find(
+          (c) => c.platform === v.primaryPlatform && !c.isSub,
+        ) ?? v.channels.find((c) => c.platform === v.primaryPlatform))
       : undefined) ?? display;
   const profileUrl = profileTargetFor(profileCh);
   const roomUrl = roomTargetFor(display);
@@ -1255,9 +1303,20 @@ const PersonCard = memo(function PersonCard({
             {[v.nameAlt, agencyGroup(v)].filter(Boolean).join(" · ")}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            {v.channels.map((c) => (
-              <PlatformChip key={c.channelId} platform={c.platform} />
-            ))}
+            {v.channels.map((c) =>
+              c.isSub ? (
+                <span
+                  key={c.channelId}
+                  className="inline-flex items-center gap-1 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2 py-0.5 text-[11px] font-medium text-cyan-100"
+                >
+                  <PlatformIcon platform={c.platform} />
+                  {PLATFORM_META[c.platform].label} 小号
+                  {c.subName ? ` · ${c.subName}` : ""}
+                </span>
+              ) : (
+                <PlatformChip key={c.channelId} platform={c.platform} />
+              ),
+            )}
             {display.followersLabel && (
               <span className="text-[11px] text-[var(--dim)]">{display.followersLabel}</span>
             )}
@@ -1267,6 +1326,11 @@ const PersonCard = memo(function PersonCard({
 
       {isChat ? (
         <div className="mt-3 rounded-xl border border-sky-300/25 bg-sky-400/8 px-3 py-2">
+          {display.isSub && (
+            <div className="mb-1.5">
+              <SubChannelBadge ch={display} small />
+            </div>
+          )}
           <p className="line-clamp-2 text-sm font-medium leading-snug">
             {display.liveTitle || "常驻聊天室"}
           </p>
@@ -1278,15 +1342,16 @@ const PersonCard = memo(function PersonCard({
             <LiveScreenshot ch={display} name={v.name} href={roomUrl} />
           </div>
           <div className="mt-3 rounded-xl border border-[#ff2d78]/30 bg-[#ff2d78]/8 px-3 py-2">
-            {(display.isAsmr || asmrView) && (
+            {(display.isAsmr || asmrView || display.isSub) && (
               <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                 {display.isAsmr ? (
                   <AsmrLiveBadge small />
-                ) : (
+                ) : asmrView ? (
                   <span className="rounded-full border border-white/20 bg-white/8 px-2 py-px text-[10px] font-semibold text-[var(--text)]/85">
                     本场不是 ASMR{display.game ? ` · 在播 ${display.game}` : " · 杂谈等其他内容"}
                   </span>
-                )}
+                ) : null}
+                <SubChannelBadge ch={display} small />
               </div>
             )}
             <p className="line-clamp-2 text-sm font-medium leading-snug">
@@ -1317,11 +1382,15 @@ const PersonCard = memo(function PersonCard({
               href={roomTargetFor(c)}
               target="_blank"
               rel="noreferrer"
-              aria-label={`打开 ${v.name} 在 ${PLATFORM_META[c.platform].label} 的另一路直播`}
+              aria-label={`打开 ${v.name} 在 ${PLATFORM_META[c.platform].label} 的另一路直播${c.isSub ? "（小号）" : display.isSub ? "（主频道）" : ""}`}
               className="inline-flex min-h-[28px] items-center gap-1.5 rounded-full border border-[#ff2d78]/35 bg-[#ff2d78]/8 px-2.5 text-[11px] font-medium transition-transform active:scale-95"
             >
               <span className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff2d78]" />
-              也在 {PLATFORM_META[c.platform].label} 直播中
+              {c.isSub
+                ? `也在小号直播中${c.subName ? ` · ${c.subName}` : ""}`
+                : display.isSub
+                  ? `主频道也在 ${PLATFORM_META[c.platform].label} 直播中`
+                  : `也在 ${PLATFORM_META[c.platform].label} 直播中`}
               {c.isAsmr ? " · ASMR 直播中" : c.game ? ` · ${c.game}` : ""}
             </a>
           ))}
@@ -1685,11 +1754,6 @@ export function App() {
     refetchInterval: 120_000,
   });
 
-  const refresh = useMutation({
-    mutationFn: () => api.refreshLive({}),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board"] }),
-  });
-
   const setHidden = useMutation({
     mutationFn: (args: { slug: string; hidden: boolean }) => api.setHidden(args),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["board"] }),
@@ -1765,6 +1829,23 @@ export function App() {
   };
 
   const data = board.data;
+  // Unknown count for the header badge: channels whose state is
+  // "unknown" in the current board snapshot. The board stores the
+  // state left by the latest completed refresh round, so this count
+  // IS the latest round's unknown count. It is recomputed from the
+  // loaded board data on every render — no extra server field — and
+  // therefore follows the number automatically whenever the board
+  // refetches after an automatic refresh. Null until first load.
+  const unknownCount = useMemo(() => {
+    if (!data) return null;
+    let n = 0;
+    for (const v of data.vtubers) {
+      for (const ch of v.channels) {
+        if (ch.state === "unknown") n += 1;
+      }
+    }
+    return n;
+  }, [data]);
   const query = search.trim().toLowerCase();
   const matchesSearch = (v: Vtuber) =>
     !query ||
@@ -1938,19 +2019,38 @@ export function App() {
             <p className="mt-1 truncate text-[11px] text-[var(--dim)]">
               {data?.refreshedAt
                 ? `更新于 ${fmtTime(data.refreshedAt)} (JST) · 每 15 分钟自动刷新`
-                : "尚未刷新，点右侧按钮获取最新状态"}
+                : "尚未刷新 · 每 15 分钟自动刷新"}
               {data && scopeParts.length > 0 ? ` · 未筛选共 ${data.liveCount} 人在播` : ""}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => refresh.mutate()}
-            disabled={refresh.isPending}
-            aria-label="立即刷新直播状态"
-            className="shrink-0 rounded-full bg-gradient-to-r from-[#8b5cf6] to-[#ff2d78] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(255,45,120,0.65)] transition-transform active:scale-95 disabled:opacity-60"
+          {/* Unknown-count badge: sits where the manual refresh button
+              used to be (right end of the header bar). Pure display —
+              no click behaviour, the refresh button does NOT come
+              back. The number is the latest refresh round's unknown
+              channel count (see unknownCount above); 0 is shown as 0,
+              never hidden. Subdued at 0, gently highlighted in the
+              header's existing gold when > 0 so a degraded round is
+              visible at a glance without a new colour family. */}
+          <span
+            role="status"
+            title={
+              unknownCount != null
+                ? `最新一轮刷新未知数：${unknownCount}`
+                : "最新一轮刷新未知数"
+            }
+            aria-label={
+              unknownCount != null
+                ? `最新一轮刷新未知数：${unknownCount}`
+                : "最新一轮刷新未知数：加载中"
+            }
+            className={`holo-flat inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-[family-name:var(--font-display)] text-sm font-bold tabular-nums ${
+              unknownCount != null && unknownCount > 0
+                ? "border-[rgba(255,176,32,0.55)] text-[var(--gold)] shadow-[0_0_14px_-2px_rgba(255,176,32,0.45)]"
+                : "text-[var(--dim)]"
+            }`}
           >
-            {refresh.isPending ? "刷新中…" : "刷新"}
-          </button>
+            {unknownCount != null ? unknownCount : "–"}
+          </span>
         </div>
         {/* ON AIR ticker: a compact index of who is live UNDER THE
             CURRENT FILTER (built from the same liveItems as the stage —
@@ -1977,6 +2077,9 @@ export function App() {
                 >
                   <span className="live-dot h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff2d78]" />
                   {v.name}
+                  {ch.isSub && (
+                    <span className="shrink-0 font-bold text-cyan-300">小号</span>
+                  )}
                   {ch.isAsmr && (
                     <span className="shrink-0 font-bold text-violet-300">ASMR 直播中</span>
                   )}
@@ -2399,7 +2502,7 @@ export function App() {
                       ? `现在没人在播「${gameFilter}」。换个游戏，或者清掉筛选看看。`
                       : data.refreshedAt
                         ? "这一刻名单里没人开播。过会儿刷新再来，或者先去下面逛逛频道。"
-                        : "还没刷新过。点右上角「刷新」，马上看谁在播。"}
+                        : "还没刷新过，稍等自动刷新后就能看到谁在播。"}
                   </p>
                   {gameFilter && (
                     <button
@@ -2702,6 +2805,11 @@ export function App() {
                 ASMR 才有。ASMR 主播开游戏/杂谈场时不会有这个徽标，卡上照常写她这场在播的游戏。B站对
                 ASMR 直播有限制，那边的主播常用「3D麦」「呼呼」「舒缓」这类委婉说法当标题，B站的场次判定会结合她是不是
                 ASMR 常驻、所在分区一起认这些说法；能识别出在玩游戏时仍按游戏算，不会误标。
+              </p>
+              <p className="mt-2">
+                神椿（KAMITSUBAKI）的成员把日常和会员直播开在官方小号上（主频道主要放作品）：花譜、理芽、春猿火、ヰ世界情緒、幸祜、明透、琶舞七人的小号已一并接入检测。小号开播一样会上
+                ON AIR，卡上标青色的「小号 ·
+                频道名」；主频道和小号同时开播时以主频道为准，她还是只算一个人，「个人主页」也始终是主频道。
               </p>
               <p className="mt-2">
                 名单按你的口味人工精选，只收女性人格 VTuber；想加人或删人，跟我说一声就行。

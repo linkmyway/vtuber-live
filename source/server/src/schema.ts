@@ -38,6 +38,16 @@ export const channels = sqliteTable("channels", {
   url: text("url").notNull(),
   appUrl: text("app_url").notNull().default(""),
   followersLabel: text("followers_label").notNull().default(""),
+  // 1 when this channel is her official SUB channel (小号) — a
+  // secondary YouTube channel of the SAME person (e.g. the
+  // KAMITSUBAKI members' membership / daily-stream clubs), not a
+  // second person and not a second primary platform. The main
+  // channel (isSub 0) always wins the ON AIR featured slot when both
+  // are live at once; a lone live sub still features, labelled as
+  // coming from the sub channel (subName carries its display name,
+  // e.g. 未確認少女観測部).
+  isSub: integer("is_sub").notNull().default(0),
+  subName: text("sub_name").notNull().default(""),
 });
 
 export const liveStatus = sqliteTable("live_status", {

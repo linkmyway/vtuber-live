@@ -50,6 +50,13 @@
       "when": 1794325996144,
       "tag": "0007_add_popularity_to_live_status",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1795339955093,
+      "tag": "0008_add_subchannel_flag_to_channels",
+      "breakpoints": true
     }
   ]
 }
