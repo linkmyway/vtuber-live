@@ -260,6 +260,8 @@ import mela from "./assets/avatars-sm/mela.jpg";
 import mayoi from "./assets/avatars-sm/mayoi.jpg";
 import mitama from "./assets/avatars-sm/mitama.jpg";
 import maou from "./assets/avatars-sm/maou.jpg";
+import kyoko from "./assets/avatars-sm/kyoko.jpg";
+import sopia from "./assets/avatars-sm/sopia.jpg";
 
 const AVATARS: Record<string, string> = {
   marine, pekora, suisei, miko, fubuki, ayame, haato, matsuri, kotone, asagi,
@@ -284,7 +286,7 @@ const AVATARS: Record<string, string> = {
   chino, neffy, rara, orihime, kakyoin, garasumiya, hinageshi, mikoto, yunagi,
   seren,
   tsuzuri, mela, mayoi, mitama,
-  maou,
+  maou, kyoko, sopia,
 };
 
 type Board = ApiResponse<typeof api, "getBoard">;
@@ -968,6 +970,10 @@ function LiveScreenshot({
           if (cancelled) return;
           const next = withBust(dBase, Date.now());
           const probe = new Image();
+          // Bilibili's image CDN (hdslb) 403s any request carrying a
+          // cross-site Referer; the poll preload must drop it too, or
+          // every 45s frame swap fails for Bilibili rooms.
+          probe.referrerPolicy = "no-referrer";
           probe.onload = () => {
             if (cancelled) return;
             setDSrc(next);
@@ -1018,6 +1024,12 @@ function LiveScreenshot({
             src={dSrc}
             alt={`${name} 的${dFrame ? "直播实时截图" : "直播封面"}`}
             className="h-full w-full object-cover"
+            // Bilibili's image CDN (hdslb) returns 403 whenever the
+            // request carries a cross-site Referer, so Bilibili frames
+            // (and any hdslb-hosted cover) rendered with the page's
+            // Referer come back blank. Dropping the Referer is a no-op
+            // for YouTube/Twitch, so it applies to every platform here.
+            referrerPolicy="no-referrer"
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : undefined}
             onLoad={() => setUpdatedAt((t) => t ?? Date.now())}
@@ -1836,10 +1848,14 @@ export function App() {
   // loaded board data on every render — no extra server field — and
   // therefore follows the number automatically whenever the board
   // refetches after an automatic refresh. Null until first load.
+  // Hidden VTubers are excluded (user rule, 2026-11-23): refreshLive
+  // no longer refreshes their channels, so their stored states are
+  // frozen and must never light this badge as noise.
   const unknownCount = useMemo(() => {
     if (!data) return null;
     let n = 0;
     for (const v of data.vtubers) {
+      if (v.hidden) continue;
       for (const ch of v.channels) {
         if (ch.state === "unknown") n += 1;
       }

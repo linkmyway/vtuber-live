@@ -935,6 +935,20 @@ export const ROSTER: RosterEntry[] = [
   // 即 YouTube，不入 PRIMARY_PLATFORM 表。头像取频道 og:image 存入
   // 自有素材并看图确认（紫发粉缎带、魔王系造型）。
   yt("maou", "魔王纳诺达", "魔王なのだ", "个人势", "个人势魔王系，2025/10/26 出道；几乎每天早 7 点朝活杂谈，另有游戏和绘画配信，3D 化众筹已达成。粉丝名なのP，粉丝标记🎀💜。", "杂谈,游戏,绘画", 282, "UCqNg-6Ge-w9apSiglceURoQ", "@maounanoda6"),
+  // ---- 周报自动补齐批（2026-11-23：アソビ★まわり隊！补齐其余两人） ----
+  // 核验（2026-11-23 沙箱直连回读 + hololive 官方新闻稿 2026-09-18 /
+  // 官方人才页 / HoloStats 对照）：百灯キョーコ频道页 externalId
+  // UCSjQDxud2HkAO2DVD3lwxmw / vanity handle @HyakutoKyoko / og:title
+  // 「Kyoko Ch. 百灯キョーコ ‐ アソビ★まわり隊!」三项对上本人；
+  // 宙科そぴあ频道页 externalId UCROQtXcp2loQEmvpe5rhJzQ / vanity
+  // handle @SorashinaSopia / og:title「Sopia Ch. 宙科そぴあ ‐
+  // アソビ★まわり隊!」三项对上本人（handle 与频道 ID 均以官方
+  // 人才页与频道页回读为准，未猜测）。两人均为单平台（YouTube），
+  // 主平台即 YouTube，不入 PRIMARY_PLATFORM 表。头像取各自频道
+  // og:image 存入自有素材并看图确认（キョーコ：橙发护目镜、绿瞳；
+  // そぴあ：紫发黄挑染、科学系造型）。卡面只写现名现信息。
+  yt("kyoko", "百灯京子", "百灯キョーコ", "hololive", "hololive 新组合「アソビ★まわり隊！」成员，组合「最強」担当，拿着扩音器的情热系ヒーローポリス（读作ひゃくとう きょーこ），2026-09-25 出道；约 34.7 万订阅、周增约 4,000，出道两个月势头正热。", "杂谈,游戏,新人", 283, "UCSjQDxud2HkAO2DVD3lwxmw", "@HyakutoKyoko"),
+  yt("sopia", "宙科索菲亚", "宙科そぴあ", "hololive", "hololive 新组合「アソビ★まわり隊！」成员，组合「ひらめき」担当，自称天才宇宙飞行士的科学系 VTuber（读作そらしな そぴあ），2026-09-24 出道；约 33.9 万订阅、周增约 4,000，科学杂谈独一档。", "杂谈,科学,新人", 284, "UCROQtXcp2loQEmvpe5rhJzQ", "@SorashinaSopia"),
 ];
 
 // ---------------------------------------------------------------------------

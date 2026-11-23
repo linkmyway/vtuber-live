@@ -388,7 +388,7 @@ export const Actions = {
   }),
 
   refreshLive: defineAction({
-    description: "Re-checks every channel's live status against Bilibili / YouTube / Twitch public endpoints and stores the result. Runs on the 15-minute schedule and from the page's refresh button.",
+    description: "Re-checks every non-hidden VTuber's channels' live status against Bilibili / YouTube / Twitch public endpoints and stores the result (hidden VTubers' channels are skipped entirely and their stored states stay frozen). Runs on the 15-minute schedule and from the page's refresh button.",
     request: z.object({}),
     response: z.object({
       checked: z.number(),
@@ -398,8 +398,19 @@ export const Actions = {
     }),
     async handler(ctx): Promise<{ checked: number; live: number; unknown: number; refreshedAt: number }> {
       const db = ctx.db<typeof schema>();
-      const chans = await db.select().from(schema.channels);
+      const allChans = await db.select().from(schema.channels);
       const vts = await db.select().from(schema.vtubers);
+      // Hidden VTubers are fully parked (user rule, 2026-11-23): their
+      // channels are NOT refreshed — no platform fetch, no status write.
+      // Their stored status rows are left untouched, so the board keeps
+      // showing the state as of the moment they were hidden (their cards
+      // only ever surface in the 已隐藏 restore section anyway). The
+      // moment one is un-hidden she re-enters this list and the next
+      // round refreshes her again.
+      const hiddenVtuberIds = new Set(
+        vts.filter((v) => v.hidden === 1).map((v) => v.id),
+      );
+      const chans = allChans.filter((c) => !hiddenVtuberIds.has(c.vtuberId));
       // The streamer's own names, for game identification: a title's
       // 【own name】 channel tag must never be read as a game.
       const selfNamesByVtuber = new Map(vts.map((v) => [v.id, [v.name, v.nameAlt]]));
