@@ -800,8 +800,14 @@ function withBust(url: string, bust: number): string {
  *   polled and never passed off as a screenshot. A stale storyboard
  *   template left in screenshotUrl by an older refresh is ignored.
  * - Twitch: the official previews-ttv live_user frame at 1280×720,
- *   which Twitch re-renders while the channel is live (derivable from
- *   the login) — a real frame, polled every 45s.
+ *   which Twitch re-renders while the channel is live — a real frame,
+ *   polled every 45s. Exception (server-probed, see refreshLive): a
+ *   live channel with no real frame gets a previews-ttv URL that
+ *   302-redirects to Twitch's 404_preview placeholder image; the
+ *   server rewrites such a row with the same person's other live
+ *   channel's real picture (shown here as a still, labelled
+ *   直播封面） or clears it entirely (no-picture state) — the
+ *   placeholder itself is never shipped.
  * - Bilibili: the room keyframe — Bilibili's system screenshot of the
  *   room, refreshed by the platform while streaming. It only exists in
  *   the room-info response, so it arrives via the server's
@@ -843,13 +849,31 @@ function screenshotSource(ch: Channel): ShotSource | null {
     }
   } else if (ch.screenshotUrl) {
     frameUrl = ch.screenshotUrl;
-  } else if (ch.platform === "twitch" && ch.handle) {
+  } else if (ch.platform === "twitch" && ch.handle && ch.thumbUrl) {
     // previews-ttv serves real frames at arbitrary sizes (verified);
-    // 1280×720 matches the server-stored copy's resolution.
+    // 1280×720 matches the server-stored copy's resolution. This
+    // derivation is only a legacy fallback for rows written before
+    // screenshotUrl existed, gated on a server-stored copy existing:
+    // since the server's Twitch 404-placeholder rule (refreshLive),
+    // a live Twitch row with an empty screenshotUrl AND no stored
+    // copy is a deliberate verdict — Twitch serves no real frame
+    // for her, only its 404_preview placeholder — and re-deriving
+    // the URL here would resurrect that placeholder. An empty pair
+    // stays empty and the card falls to its no-picture state.
     frameUrl = `https://static-cdn.jtvnw.net/previews-ttv/live_user_${ch.handle}-1280x720.jpg`;
   }
+  // A Twitch row whose screenshotUrl is NOT its own previews-ttv
+  // frame carries the substitute picture the server borrowed from
+  // the same person's other live channel (the 404-placeholder rule):
+  // a still of the same stream, not this channel's live frame — it
+  // is never polled and never labelled a screenshot, and its stored
+  // copy is a cover copy, not a frame copy.
+  if (ch.platform === "twitch" && frameUrl && !frameUrl.includes("previews-ttv")) {
+    realtime = false;
+  }
   const posterUrl = ch.thumbUrl || "";
-  const posterIsFrame = !!posterUrl && ch.platform === "twitch";
+  const posterIsFrame =
+    !!posterUrl && ch.platform === "twitch" && frameUrl.includes("previews-ttv");
   if (frameUrl) return { kind: "direct", url: frameUrl, realtime, posterUrl, posterIsFrame };
   if (posterUrl) return { kind: "direct", url: posterUrl, realtime: false, posterUrl: "", posterIsFrame: false };
   return null;

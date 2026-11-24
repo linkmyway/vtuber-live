@@ -101,6 +101,45 @@ async function storeThumb(ctx: Ctx, channelId: number, url: string, referer: str
   }
 }
 
+/**
+ * Probe a Twitch live preview-frame URL (previews-ttv on
+ * static-cdn.jtvnw.net) and decide whether Twitch is actually serving
+ * a frame there. A channel can be live with NO real preview frame —
+ * Twitch then answers the previews-ttv URL with a 302 redirect to its
+ * own 404_preview placeholder image (the redirect response carries
+ * `X-404-Redirect: true`; measured live 2026-11-24 on Henya the
+ * Genius's channel, live with no real frame while her YouTube channel
+ * carried the same stream with a real cover). The placeholder image
+ * itself loads fine (HTTP 200 after the redirect), so no client-side
+ * load check can ever see it — only this redirect/header signature
+ * can, which is why the judgment lives in the refresh layer.
+ *
+ * Returns true = placeholder (proven), false = a real frame is served,
+ * null = undetermined (network error, an unexpected status, a redirect
+ * somewhere else): the caller must keep the original URL on null —
+ * a failed probe never proves "no frame", the same discipline as
+ * every other check in this file (a parse/fetch failure is "unknown",
+ * never a negative verdict).
+ */
+export async function probeTwitchPreview(url: string): Promise<boolean | null> {
+  if (!url.startsWith("https://static-cdn.jtvnw.net/")) return null;
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      redirect: "manual",
+      headers: { "User-Agent": UA },
+    });
+    if (res.headers.get("x-404-redirect")) return true;
+    const location = res.headers.get("location") ?? "";
+    if (location.includes("404_preview")) return true;
+    if (res.status >= 300 && res.status < 400) return null; // redirected elsewhere — proves nothing
+    if (res.ok) return false;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export type ChannelRow = typeof schema.channels.$inferSelect;
 
 export async function checkBilibili(
@@ -1024,6 +1063,13 @@ export async function checkTwitch(ctx: Ctx, ch: ChannelRow, selfNames: string[] 
   // 1280×720, 1920×1080, 2560×1440 all returned distinct real frames).
   // 1280×720 is the working size — ≥2× a phone card's device pixels
   // without the 1080p file weight on a 45s poll.
+  // Caveat: a live channel may have NO real frame at this URL —
+  // Twitch then 302-redirects it to its 404_preview placeholder,
+  // and storeThumb below happily stores the placeholder's bytes.
+  // refreshLive probes every live Twitch result with
+  // probeTwitchPreview and rewrites placeholder rows before they
+  // are written (see actions.ts) — this URL is a candidate, not a
+  // proven frame.
   const previewUrl = `https://static-cdn.jtvnw.net/previews-ttv/live_user_${login}-1280x720.jpg`;
   const thumbKey = await storeThumb(ctx, ch.id, previewUrl, "https://www.twitch.tv/");
   return {

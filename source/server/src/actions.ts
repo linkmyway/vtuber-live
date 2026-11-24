@@ -21,7 +21,12 @@
 //     re-verified 2026-11-09 — see storeYoutubeCover), so the field
 //     carries the stream's current cover URL at its highest real tier
 //     and the client labels it 直播封面， never a screenshot.
-//   - Twitch: the previews-ttv live_user frame (verified real frames).
+//   - Twitch: the previews-ttv live_user frame (verified real frames) —
+//     except when Twitch has no frame for a live channel and the URL
+//     302s to its 404_preview placeholder: refreshLive probes for
+//     exactly that and rewrites the row with a same-person live
+//     sibling's real picture, or clears it (see the placeholder rule
+//     in refreshLive).
 //   - Bilibili: the room keyframe from the room-info response.
 // Anything a source cannot prove becomes state "unknown" — never a guess.
 //
@@ -40,6 +45,7 @@ import {
   checkTwitch,
   checkYoutube,
   onAirSortKeyOf,
+  probeTwitchPreview,
   type ChannelRow,
   type StatusUpdate,
 } from "./detect";
@@ -450,6 +456,69 @@ export const Actions = {
         }
       });
       await Promise.all(workers);
+
+      // Twitch 404-placeholder rule (general, measured 2026-11-24 on
+      // Henya the Genius): a channel can be LIVE on Twitch with no
+      // real preview frame — previews-ttv then 302-redirects to
+      // Twitch's own 404_preview placeholder image (X-404-Redirect),
+      // which loads perfectly fine as an image, so neither the stored
+      // thumb copy nor the client can tell it apart from a real
+      // frame. Probe every LIVE Twitch result's preview URL once
+      // (HEAD, Twitch CDN only; non-live channels are not probed,
+      // and hidden VTubers' channels never reach this list at all).
+      // A proven placeholder is rewritten BEFORE the rows are
+      // written below, using only this round's already-fetched data
+      // (no extra platform fetch, no extra YouTube grab):
+      // - if the same person has another channel live in this same
+      //   round whose picture is real (a non-empty screenshotUrl
+      //   that is not itself a probed placeholder), that picture —
+      //   URL and its stored-copy key — replaces this channel's, so
+      //   the card shows the same stream's real image. Only the
+      //   picture changes: channel ownership, live links and the
+      //   primary-platform pick are untouched.
+      // - if she has no real picture anywhere this round, both
+      //   fields are cleared, so the board's existing no-picture
+      //   presentation takes over — the placeholder never ships.
+      // thumbKey is rewritten together with screenshotUrl because
+      // checkTwitch stored the preview into blobs: left alone, the
+      // stored copy of the placeholder would keep painting the card
+      // even with screenshotUrl fixed. A probe that cannot decide
+      // (probeTwitchPreview null — network error, unexpected reply)
+      // leaves the row exactly as fetched: a failed probe proves
+      // nothing, the standing unknown-discipline of this artifact.
+      const placeholderChannelIds = new Set<number>();
+      await Promise.all(
+        results
+          .filter(
+            ({ ch, st }) =>
+              ch.platform === "twitch" && st.state === "live" && st.screenshotUrl,
+          )
+          .map(async ({ ch, st }) => {
+            if ((await probeTwitchPreview(st.screenshotUrl)) === true) {
+              placeholderChannelIds.add(ch.id);
+            }
+          }),
+      );
+      if (placeholderChannelIds.size > 0) {
+        for (const entry of results) {
+          if (!placeholderChannelIds.has(entry.ch.id)) continue;
+          const sibling = results.find(
+            (r) =>
+              r.ch.id !== entry.ch.id &&
+              r.ch.vtuberId === entry.ch.vtuberId &&
+              r.st.state === "live" &&
+              r.st.screenshotUrl !== "" &&
+              !placeholderChannelIds.has(r.ch.id),
+          );
+          if (sibling) {
+            entry.st.screenshotUrl = sibling.st.screenshotUrl;
+            entry.st.thumbKey = sibling.st.thumbKey;
+          } else {
+            entry.st.screenshotUrl = "";
+            entry.st.thumbKey = "";
+          }
+        }
+      }
 
       for (const { ch, st } of results) {
         if (st.state === "live") live += 1;
